@@ -1,4 +1,4 @@
-const CACHE = 'personal-command-center-v2';
+const CACHE = 'personal-command-center-v3';
 const CORE = ['./', './index.html', './style.css', './script.js', './storage.js', './manifest.webmanifest', './icon.svg'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));

@@ -19,6 +19,8 @@ let networkListenersInitialized = false;
 let taskReminderInterval = null;
 let deferredInstallPrompt = null;
 let pendingBackgroundImage = undefined;
+let timedConfirmationInterval = null;
+let timedConfirmationAction = null;
 
 // Try to initialize Firebase
 try {
@@ -664,7 +666,8 @@ function startTimer() {
     }
 
     if (appData.timer.mode === 'timer') {
-        const mins = parseInt(document.getElementById('focusTime').value);
+        const mins = Math.max(10, parseInt(document.getElementById('focusTime').value, 10) || 10);
+        document.getElementById('focusTime').value = mins;
         appData.timer.totalDuration = mins;
         appData.timer.endTime = Date.now() + (mins * 60 * 1000);
         appData.timer.remaining = 0;
@@ -681,6 +684,11 @@ function startTimer() {
     updateTimerVisuals();
     saveData();
     runTimerInterval();
+}
+
+function enforceSessionMinimum(input) {
+    const value = parseInt(input.value, 10);
+    if (!Number.isFinite(value) || value < 10) input.value = 10;
 }
 
 function pauseTimer() {
@@ -706,6 +714,18 @@ function pauseTimer() {
 }
 
 function finishEarly() {
+    const remainingMs = appData.timer.active
+        ? (appData.timer.endTime || 0) - Date.now()
+        : (appData.timer.remaining || 0);
+    const isEarly = appData.timer.mode === 'timer' && remainingMs > 0;
+    if (isEarly) {
+        requestTimedConfirmation('End this session?', 'The timer is still running. You can cancel or wait 10 seconds to confirm ending it early.', finishEarlyNow);
+        return;
+    }
+    finishEarlyNow();
+}
+
+function finishEarlyNow() {
     let elapsedMinutes = 0;
     if (appData.timer.mode === 'timer') {
         if(appData.timer.active) {
@@ -961,7 +981,12 @@ function triggerPanic() {
 // --- ZEN ---
 function toggleZenMode() {
     const card = document.getElementById('timerCard');
-    const isZen = card.classList.toggle('fullscreen');
+    if (card.classList.contains('fullscreen')) {
+        requestTimedConfirmation('Exit Zen mode?', 'Stay in Zen mode or wait 10 seconds to confirm exiting.', exitZenMode);
+        return;
+    }
+    card.classList.add('fullscreen');
+    const isZen = true;
     document.body.classList.toggle('zen-mode-active', isZen);
     const zenButton = card.querySelector('.timer-zen-button');
     if (zenButton) {
@@ -971,8 +996,48 @@ function toggleZenMode() {
     window.scrollTo(0, 0);
 }
 
+function exitZenMode() {
+    const card = document.getElementById('timerCard');
+    card.classList.remove('fullscreen');
+    document.body.classList.remove('zen-mode-active');
+    const zenButton = card.querySelector('.timer-zen-button');
+    if (zenButton) { zenButton.textContent = 'Zen mode'; zenButton.setAttribute('aria-pressed', 'false'); }
+}
+
+function requestTimedConfirmation(title, message, action) {
+    cancelTimedConfirmation(false);
+    timedConfirmationAction = action;
+    const modal=document.getElementById('timedConfirmModal');
+    const button=document.getElementById('timedConfirmButton');
+    document.getElementById('timedConfirmTitle').textContent=title;
+    document.getElementById('timedConfirmMessage').textContent=message;
+    let remaining=10;
+    button.disabled=true; button.textContent=`Confirm in ${remaining}s`;
+    modal.style.display='flex';
+    timedConfirmationInterval=setInterval(()=>{
+        remaining--;
+        if (remaining <= 0) { clearInterval(timedConfirmationInterval); timedConfirmationInterval=null; button.disabled=false; button.textContent='Yes, confirm'; }
+        else button.textContent=`Confirm in ${remaining}s`;
+    },1000);
+}
+
+function acceptTimedConfirmation() {
+    if (!timedConfirmationAction || document.getElementById('timedConfirmButton').disabled) return;
+    const action=timedConfirmationAction;
+    cancelTimedConfirmation();
+    action();
+}
+
+function cancelTimedConfirmation(close=true) {
+    if (timedConfirmationInterval) clearInterval(timedConfirmationInterval);
+    timedConfirmationInterval=null; timedConfirmationAction=null;
+    const modal=document.getElementById('timedConfirmModal');
+    if (close && modal) modal.style.display='none';
+}
+
 document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && document.getElementById('timerCard')?.classList.contains('fullscreen')) toggleZenMode();
+    if (event.key === 'Escape' && document.getElementById('timedConfirmModal')?.style.display === 'flex') cancelTimedConfirmation();
+    else if (event.key === 'Escape' && document.getElementById('timerCard')?.classList.contains('fullscreen')) toggleZenMode();
 });
 
 // --- REST OF HELPERS (Dopamine, Inventory, etc.) ---

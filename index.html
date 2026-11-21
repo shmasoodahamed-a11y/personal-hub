@@ -90,13 +90,11 @@
                     <div class="timer-display" id="timer">25:00</div>
                     <div class="timer-controls">
                         <button onclick="startTimer()" id="btnStart">Start</button>
-                        <button onclick="pauseTimer()" style="background:#f59e0b">Pause</button>
                         <button onclick="finishEarly()" style="background:#10b981; font-size:0.8rem; width:auto;">✅ Done</button>
-                        <button onclick="resetTimer()" class="stop" style="background:#6b7280; width:auto;">Reset</button>
                     </div>
                     <div class="timer-settings" id="timerSettingsArea">
-                        <div class="setting-group"><label>Focus</label><input type="number" id="focusTime" value="25" onchange="resetTimer()"></div>
-                        <div class="setting-group"><label>Break</label><input type="number" id="breakTime" value="5" onchange="resetTimer()"></div>
+                        <div class="setting-group"><label>Focus (min)</label><input type="number" id="focusTime" value="25" min="10" step="1" onchange="enforceSessionMinimum(this); resetTimer()"></div>
+                        <div class="setting-group"><label>Break (min)</label><input type="number" id="breakTime" value="10" min="10" step="1" onchange="enforceSessionMinimum(this)"></div>
                     </div>
                 </div>
 
@@ -1014,5 +1012,6 @@
 <div id="globalSearchModal" class="modal"><div class="modal-content global-search-content"><div class="global-search-head"><h2>Search everything</h2><button onclick="closeModal('globalSearchModal')" class="btn-cancel">Close</button></div><input id="globalSearchInput" type="search" class="modal-input" placeholder="Search tasks, plans, topics, notes, watchlist, finance..." oninput="runGlobalSearch()"><div id="globalSearchResults"></div></div></div>
 <div id="preferencesModal" class="modal"><div class="modal-content preferences-content"><h2>Preferences</h2><label for="prefCurrency">Currency</label><select id="prefCurrency" class="modal-input"><option value="INR">Indian Rupee (INR)</option><option value="USD">US Dollar (USD)</option><option value="EUR">Euro (EUR)</option><option value="GBP">British Pound (GBP)</option><option value="CAD">Canadian Dollar (CAD)</option><option value="AUD">Australian Dollar (AUD)</option><option value="JPY">Japanese Yen (JPY)</option></select><label><input type="checkbox" id="prefWeekMonday"> Start calendar weeks on Monday</label><div class="background-setting"><div><strong>Workspace background</strong><p>Add your own image behind the workspace.</p></div><div id="backgroundPreview" class="background-preview"><span>No image selected</span></div><label class="background-upload-button" for="backgroundImageInput"><i class="fas fa-image"></i> Choose image</label><input id="backgroundImageInput" type="file" accept="image/*" hidden onchange="previewBackgroundImage(this)"><button type="button" class="background-remove-button" onclick="removeBackgroundImage()">Remove image</button></div><div class="goal-input" style="margin-top:16px"><button onclick="savePreferences()">Save preferences</button><button class="btn-cancel" onclick="closeModal('preferencesModal')">Close</button></div></div></div>
 <div id="welcomeModal" class="modal"><div class="modal-content"><h2>Set up your workspace</h2><p>Choose a currency and calendar week start. You can change these later in Preferences.</p><label for="welcomeCurrency">Currency</label><select id="welcomeCurrency" class="modal-input"><option value="INR">Indian Rupee (INR)</option><option value="USD">US Dollar (USD)</option><option value="EUR">Euro (EUR)</option><option value="GBP">British Pound (GBP)</option><option value="CAD">Canadian Dollar (CAD)</option><option value="AUD">Australian Dollar (AUD)</option><option value="JPY">Japanese Yen (JPY)</option></select><label><input type="checkbox" id="welcomeWeekMonday"> Start calendar weeks on Monday</label><button onclick="completeWelcomeSetup()" style="width:100%;margin-top:16px">Get started</button></div></div>
+<div id="timedConfirmModal" class="modal"><div class="modal-content timed-confirm-content"><h2 id="timedConfirmTitle">Confirm action</h2><p id="timedConfirmMessage"></p><div class="timed-confirm-actions"><button type="button" id="timedConfirmButton" onclick="acceptTimedConfirmation()" disabled>Wait 10 seconds</button><button type="button" class="btn-cancel" onclick="cancelTimedConfirmation()">Cancel</button></div></div></div>
 </body>
 </html>

@@ -41,6 +41,11 @@ input, select, textarea { background: var(--bg); color: var(--text); border: 1px
 .background-upload-button,.background-remove-button { width:max-content; min-height:36px; padding:8px 11px; border-radius:8px; cursor:pointer; font-size:.8rem; font-weight:650; }
 .background-upload-button { background:var(--primary); color:#fff; }
 .background-remove-button { border:1px solid var(--border); background:transparent; color:var(--danger); }
+.timed-confirm-content { width:min(440px,92vw); }
+.modal#timedConfirmModal { z-index:11050; }
+.timed-confirm-content p { margin:14px 0 20px; color:var(--text-muted); line-height:1.55; }
+.timed-confirm-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; }
+.timed-confirm-actions button:disabled { opacity:.62; cursor:wait; }
 
 /* ZEN MODE (Fullscreen Timer) */
 .card.fullscreen {
