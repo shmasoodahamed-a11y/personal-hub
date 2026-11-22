@@ -33,6 +33,7 @@ body.dark-mode.has-custom-background .main-content { background:rgba(15,23,42,.1
 .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
 .card { background: var(--card-bg); padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid var(--border); }
 button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; touch-action:manipulation; background: var(--primary); color: white; font-weight: 500; transition:transform 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, border-color 150ms ease; }
+button:disabled { opacity:.48; cursor:not-allowed; box-shadow:none !important; transform:none !important; }
 .btn-cancel { background: #6b7280; }
 input, select, textarea { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: 10px; font-size: 1rem;}
 .background-setting { display:grid; grid-template-columns:1fr auto; gap:10px 14px; align-items:center; margin-top:20px; padding-top:18px; border-top:1px solid var(--border); }

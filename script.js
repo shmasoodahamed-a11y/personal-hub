@@ -21,6 +21,7 @@ let deferredInstallPrompt = null;
 let pendingBackgroundImage = undefined;
 let timedConfirmationInterval = null;
 let timedConfirmationAction = null;
+let completingSession = false;
 
 // Try to initialize Firebase
 try {
@@ -595,6 +596,7 @@ function updateTimerVisuals() {
     const settings = document.getElementById('timerSettingsArea');
     const display = document.getElementById('timer');
     const startBtn = document.getElementById('btnStart');
+    const doneBtn = document.getElementById('btnDone');
     const isStopwatch = appData.timer.mode === 'stopwatch';
     btnTimer.classList.toggle('active', !isStopwatch);
     btnStopwatch.classList.toggle('active', isStopwatch);
@@ -628,6 +630,10 @@ function updateTimerVisuals() {
     } else {
         startBtn.innerText = (appData.timer.remaining > 0 || appData.timer.accumulated > 0) ? "Resume" : "Start";
         startBtn.style.background = (appData.timer.remaining > 0 || appData.timer.accumulated > 0) ? "var(--success)" : "var(--primary)";
+    }
+    if (doneBtn) {
+        doneBtn.disabled = !appData.timer.active;
+        doneBtn.title = appData.timer.active ? 'End and log this session' : 'Start a timer before ending a session';
     }
 }
 
@@ -714,6 +720,7 @@ function pauseTimer() {
 }
 
 function finishEarly() {
+    if (!appData.timer.active) return;
     const remainingMs = appData.timer.active
         ? (appData.timer.endTime || 0) - Date.now()
         : (appData.timer.remaining || 0);
@@ -726,6 +733,7 @@ function finishEarly() {
 }
 
 function finishEarlyNow() {
+    if (!appData.timer.active) return;
     let elapsedMinutes = 0;
     if (appData.timer.mode === 'timer') {
         if(appData.timer.active) {
@@ -753,16 +761,14 @@ function finishEarlyNow() {
     updateRank();
     
     logSession(sub, appData.timer.chapter, elapsedMinutes, appData.timer.mode === 'timer' ? "Timer" : "Stopwatch");
+    resetTimer(false);
     saveData();
-    
-    alert(`Logged ${elapsedMinutes} minutes for ${sub}.`);
-    resetTimer(); 
     renderCharts();
     updateDashboard();
     if (chainState.active) completeChainStep();
 }
 
-function resetTimer() {
+function resetTimer(persist = true) {
     clearInterval(timerInterval);
     timerInterval = null;
     appData.timer.active = false;
@@ -770,7 +776,7 @@ function resetTimer() {
     appData.timer.accumulated = 0;
     appData.timer.endTime = null;
     appData.timer.startTime = null;
-    saveData();
+    if (persist) saveData();
     document.title = "Personal Command Center";
     updateTimerVisuals();
 }
@@ -807,12 +813,35 @@ function tick() {
     }
 }
 
+function playTimerCompletionSound() {
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        const context = new AudioContextClass();
+        const gain = context.createGain();
+        gain.gain.setValueAtTime(0.0001, context.currentTime);
+        gain.connect(context.destination);
+        [0, 0.32].forEach((offset, index) => {
+            const oscillator = context.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(index === 0 ? 880 : 1175, context.currentTime + offset);
+            oscillator.connect(gain);
+            gain.gain.setValueAtTime(0.0001, context.currentTime + offset);
+            gain.gain.exponentialRampToValueAtTime(0.16, context.currentTime + offset + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + offset + 0.26);
+            oscillator.start(context.currentTime + offset);
+            oscillator.stop(context.currentTime + offset + 0.28);
+        });
+        setTimeout(() => context.close(), 800);
+    } catch (error) { console.warn('Timer completion sound could not play:', error); }
+}
+
 function completeSession() { 
+    if (!appData.timer.active || completingSession) return;
+    completingSession = true;
     clearInterval(timerInterval); timerInterval = null;
-    try { new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg').play(); } catch(e){}
+    playTimerCompletionSound();
     document.title = "Time's Up!";
-    resetTimer();
-    
     const sub = appData.timer.subject || "General";
     const mins = appData.timer.totalDuration;
     const today = getTodayDate();
@@ -822,15 +851,15 @@ function completeSession() {
     
     updateRank();
     logSession(sub, appData.timer.chapter, mins, "Timer");
+    resetTimer(false);
     saveData();
     
     if (Notification.permission === "granted") new Notification("Session Complete!", { body: `Finished: ${sub}` });
     
-    document.getElementById('endSessionTopic').innerText = `Finished: ${sub}`;
-    document.getElementById('subjectModal').style.display = 'flex'; 
     renderCharts();
     updateDashboard();
     if (chainState.active) completeChainStep();
+    completingSession = false;
 }
 
 // ==========================================

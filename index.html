@@ -90,7 +90,7 @@
                     <div class="timer-display" id="timer">25:00</div>
                     <div class="timer-controls">
                         <button onclick="startTimer()" id="btnStart">Start</button>
-                        <button onclick="finishEarly()" style="background:#10b981; font-size:0.8rem; width:auto;">✅ Done</button>
+                        <button onclick="finishEarly()" id="btnDone" style="background:#10b981; font-size:0.8rem; width:auto;" disabled>✅ Done</button>
                     </div>
                     <div class="timer-settings" id="timerSettingsArea">
                         <div class="setting-group"><label>Focus (min)</label><input type="number" id="focusTime" value="25" min="10" step="1" onchange="enforceSessionMinimum(this); resetTimer()"></div>
@@ -484,7 +484,6 @@
         </div>
     </div>
 </div>
-    <div id="subjectModal" class="modal"><div class="modal-content"><h3>Log Focus Session</h3><select id="timerSubject" class="modal-input"><option value="General">General</option></select><div id="endSessionTopic"></div><button onclick="saveTimerSession()">Log</button></div></div>
     <div id="aiModal" class="modal"><div class="modal-content"><h3>AI</h3><select id="aiTopic" class="modal-input"><option disabled selected>Topic...</option></select><select id="aiMode" class="modal-input"><option value="explain">Explain</option><option value="quiz">Quiz</option></select><textarea id="aiOutput" rows="5" class="modal-input"></textarea><button onclick="generateAIPrompt()">Generate</button><button onclick="closeModal('aiModal')">Close</button></div></div>
     <div id="calcModal" class="modal"><div class="modal-content"><h3>Calc</h3><input id="calcInput" class="modal-input"><div class="calc-keys"><button onclick="calc('7')">7</button><button onclick="calc('8')">8</button><button onclick="calc('9')">9</button><button onclick="calc('/')">/</button><button onclick="calc('4')">4</button><button onclick="calc('5')">5</button><button onclick="calc('6')">6</button><button onclick="calc('*')">*</button><button onclick="calc('1')">1</button><button onclick="calc('2')">2</button><button onclick="calc('3')">3</button><button onclick="calc('-')">-</button><button onclick="calc('C')">C</button><button onclick="calc('0')">0</button><button onclick="calc('=')">=</button><button onclick="calc('+')">+</button></div><button onclick="closeModal('calcModal')">Close</button></div></div>
     
