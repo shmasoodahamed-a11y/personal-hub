@@ -1042,11 +1042,12 @@ document.addEventListener('keydown', event => {
 
 // --- REST OF HELPERS (Dopamine, Inventory, etc.) ---
 function logDistraction() {
-    const act = document.getElementById('distractionInput').value;
-    const mins = parseInt(document.getElementById('distractionTime').value);
-    if(act && mins) {
+    const act = document.getElementById('distractionInput').value.trim();
+    const mins = parseInt(document.getElementById('distractionTime').value, 10);
+    const category = document.getElementById('distractionCategory')?.value || 'Other';
+    if(act && Number.isFinite(mins) && mins > 0) {
         if(!appData.dopamine) appData.dopamine = [];
-        appData.dopamine.unshift({ a: act, m: mins, d: getTodayDate() });
+        appData.dopamine.unshift({ a: act, m: mins, category, d: getTodayDate(), id:Date.now() });
         document.getElementById('distractionInput').value = '';
         document.getElementById('distractionTime').value = '';
         saveData();
@@ -1057,19 +1058,33 @@ function renderDopamine() {
     if(!appData.dopamine) appData.dopamine = [];
     const today = getTodayDate();
     const todayLogs = appData.dopamine.filter(l => l.d === today);
-    const total = todayLogs.reduce((s, i) => s + i.m, 0);
-    document.getElementById('totalWasted').innerText = total;
+    const total = todayLogs.reduce((s, i) => s + Number(i.m || 0), 0);
+    const limit = Number(appData.detoxGoal || 60);
+    const goalLabel=document.getElementById('detoxGoalLabel'); if(goalLabel) goalLabel.textContent=`${limit}m`;
+    document.getElementById('totalWasted').innerText = `${total}m`;
+    const remaining=document.getElementById('detoxRemaining'); if(remaining) { const left=limit-total; remaining.textContent=left >= 0 ? `${left}m` : `${Math.abs(left)}m over`; remaining.style.color=left >= 0 ? 'var(--success)' : 'var(--danger)'; }
+    const weekTotal=appData.dopamine.filter(log => (new Date(`${today}T00:00:00`) - new Date(`${log.d}T00:00:00`)) / 86400000 < 7 && log.d <= today).reduce((sum, log) => sum + Number(log.m || 0), 0);
+    const week=document.getElementById('detoxWeekTotal'); if(week) week.textContent=`${weekTotal}m`;
+    const byCategory={}; todayLogs.forEach(log=>byCategory[log.category || 'Other']=(byCategory[log.category || 'Other']||0)+Number(log.m||0));
+    const top=Object.entries(byCategory).sort((a,b)=>b[1]-a[1])[0];
+    const insight=document.getElementById('detoxInsight'); if(insight) insight.textContent=top ? `Today’s biggest pull: ${top[0]} (${top[1]}m). ${total > limit ? 'You are above your chosen limit.' : `${Math.max(0,limit-total)} minutes remain in your limit.`}` : 'No distractions logged today. Protect this space.';
     const list = document.getElementById('distractionList');
     list.innerHTML = '';
-    todayLogs.forEach(l => { list.innerHTML += `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #374151; padding:5px;"><span>${l.a}</span><span style="color:var(--danger)">${l.m}m</span></div>`; });
+    todayLogs.forEach((l, index) => { list.innerHTML += `<div class="detox-log"><div><strong>${l.a}</strong><small>${l.category || 'Other'}</small></div><div><span>${l.m}m</span><button type="button" onclick="deleteDistraction(${index})" aria-label="Delete ${l.a}">&times;</button></div></div>`; });
 }
+function deleteDistraction(index) { const today=getTodayDate(); const rows=(appData.dopamine||[]).filter(log=>log.d===today); const target=rows[index]; const targetIndex=(appData.dopamine||[]).indexOf(target); if(targetIndex>=0) { appData.dopamine.splice(targetIndex,1); saveData(); renderDopamine(); } }
+function setDetoxGoal() { const next=prompt('Set your daily distraction limit in minutes:', appData.detoxGoal || 60); if(next===null)return; const goal=Number(next); if(!Number.isFinite(goal)||goal<0){alert('Enter a whole number of minutes.');return;} appData.detoxGoal=Math.round(goal); saveData(); renderDopamine(); }
 
+let shopFilter = 'open';
 function addInventory() {
-    const item = document.getElementById('invInput').value;
+    const item = document.getElementById('invInput').value.trim();
+    const category=document.getElementById('invCategory')?.value || 'Other';
+    const qty=Math.max(1, Number(document.getElementById('invQty')?.value || 1));
     if(item) {
         if(!appData.inventory) appData.inventory = [];
-        appData.inventory.push({ n: item, c: false });
+        appData.inventory.push({ n: item, c: false, category, qty, createdAt:Date.now() });
         document.getElementById('invInput').value = '';
+        document.getElementById('invQty').value = 1;
         saveData();
         renderInventory();
     }
@@ -1086,14 +1101,16 @@ function deleteInventory(i) {
 }
 function renderInventory() {
     const list = document.getElementById('invList');
+    if(!list) return;
     if(!appData.inventory) appData.inventory = [];
     list.innerHTML = '';
-    appData.inventory.forEach((item, i) => {
-        const style = item.c ? 'opacity:0.5; text-decoration:line-through;' : '';
-        const check = item.c ? 'checked' : '';
-        list.innerHTML += `<div class="inv-item" style="${style}"><label style="display:flex; align-items:center; gap:10px; cursor:pointer;"><input type="checkbox" ${check} onchange="toggleInventory(${i})"><span>${item.n}</span></label><button onclick="deleteInventory(${i})" style="color:red; background:none; padding:0;">x</button></div>`;
-    });
+    const open=appData.inventory.filter(item=>!item.c).length;
+    const summary=document.getElementById('shopSummary'); if(summary) summary.textContent=`${open} to buy`;
+    appData.inventory.forEach((item, i) => { const visible=shopFilter==='all'||(shopFilter==='open'&&!item.c)||(shopFilter==='done'&&item.c); if(!visible)return; list.innerHTML += `<div class="shop-item ${item.c?'purchased':''}"><button type="button" class="shop-check" onclick="toggleInventory(${i})" aria-label="Toggle purchase">${item.c?'✓':''}</button><div class="shop-item-main"><strong>${item.n}</strong><small>${item.category || 'Other'} · ${item.qty || 1} needed</small></div><div class="shop-quantity"><button type="button" onclick="changeInventoryQty(${i},-1)">−</button><span>${item.qty || 1}</span><button type="button" onclick="changeInventoryQty(${i},1)">+</button></div><button type="button" class="shop-delete" onclick="deleteInventory(${i})">Remove</button></div>`; });
+    if(!list.children.length) list.innerHTML='<p class="empty-state">Nothing here yet.</p>';
 }
+function changeInventoryQty(index, delta) { appData.inventory[index].qty=Math.max(1,Number(appData.inventory[index].qty||1)+delta); saveData(); renderInventory(); }
+function filterShop(filter, button) { shopFilter=filter; document.querySelectorAll('.shop-filter button').forEach(btn=>btn.classList.toggle('active',btn===button)); renderInventory(); }
 
 // 5.5 THOUGHT PAD
 function saveThoughts() {
@@ -1548,7 +1565,8 @@ function renderSyllabus() {
     }
     
     UPSC_SYLLABUS.forEach((sub, sIdx) => {
-        html += `<tr class="subject-header"><td colspan="5">${sub.subject}</td></tr>`;
+        const topicCount=sub.chapters.reduce((sum, chapter)=>sum+chapter.topics.length,0);
+        html += `<tr class="subject-header"><td colspan="5"><span class="curriculum-level">Subject</span><strong>${sub.subject}</strong><small>${sub.chapters.length} chapters · ${topicCount} topics</small></td></tr>`;
         
         sub.chapters.forEach((chap, cIdx) => {
             const chapId = `chap-${sIdx}-${cIdx}`;
@@ -1558,7 +1576,7 @@ function renderSyllabus() {
             const visibilityClass = isOpen ? 'visible' : ''; 
             // ---------------------------------------------------
 
-            html += `<tr class="chapter-row" onclick="toggleChapter('${chapId}')"><td colspan="5"><i class="fas fa-chevron-right" id="icon-${chapId}"></i> ${chap.title} <small>(${chap.topics.length})</small></td></tr>`;
+            html += `<tr class="chapter-row" onclick="toggleChapter('${chapId}')"><td colspan="5"><i class="fas fa-chevron-right" id="icon-${chapId}"></i><span class="curriculum-level">Chapter</span> ${chap.title} <small>${chap.topics.length} topics</small></td></tr>`;
             
             chap.topics.forEach(top => {
                 const key = `${sub.subject}-${chap.title}-${top}`;
@@ -1567,7 +1585,7 @@ function renderSyllabus() {
                 const hasNote = (data.note || data.link || (data.links && data.links.length > 0)) ? 'has-note' : '';
                 
                 // Add the 'visibilityClass' here so it stays open if needed
-                html += `<tr class="topic-row ${chapId} ${visibilityClass}"><td class="topic-name">${top}</td><td><div class="status-btn status-${data.status}" onclick="cycleStatus('${safeKey}', this)"></div></td><td><input type="checkbox" onchange="togglePYQ('${safeKey}')" ${data.pyq?'checked':''}></td><td><div class="rev-box"><button class="rev-btn" onclick="updateRev('${safeKey}', -1, this)">-</button><span>${data.rev||0}</span><button class="rev-btn" onclick="updateRev('${safeKey}', 1, this)">+</button></div></td><td style="text-align:center;"><button class="note-btn ${hasNote}" onclick="openNoteModal('${safeKey}')"><i class="fas fa-sticky-note"></i></button></td></tr>`;
+                html += `<tr class="topic-row ${chapId} ${visibilityClass}"><td class="topic-name"><span class="topic-dot"></span><span>${top}</span></td><td><div class="status-btn status-${data.status}" onclick="cycleStatus('${safeKey}', this)"></div></td><td><input type="checkbox" onchange="togglePYQ('${safeKey}')" ${data.pyq?'checked':''}></td><td><div class="rev-box"><button class="rev-btn" onclick="updateRev('${safeKey}', -1, this)">-</button><span>${data.rev||0}</span><button class="rev-btn" onclick="updateRev('${safeKey}', 1, this)">+</button></div></td><td style="text-align:center;"><button class="note-btn ${hasNote}" onclick="openNoteModal('${safeKey}')"><i class="fas fa-sticky-note"></i></button></td></tr>`;
             });
         });
     });
@@ -1830,7 +1848,7 @@ function openCalcModal() { document.getElementById('calcModal').style.display = 
 
 function openAIModal() { const sel = document.getElementById('aiTopic'); sel.innerHTML = '<option value="" disabled selected>Select Topic...</option>'; UPSC_SYLLABUS.forEach(s => s.chapters.forEach(c => c.topics.forEach(t => sel.innerHTML += `<option value="${t}">${t}</option>`))); document.getElementById('aiModal').style.display = 'flex'; }
 function generateAIPrompt() { const topic = document.getElementById('aiTopic').value; const mode = document.getElementById('aiMode').value; if(!topic) return; let prompt = ""; if(mode === "explain") prompt = `Explain "${topic}" in simple terms.`; if(mode === "quiz") prompt = `Generate 5 MCQs on "${topic}".`; if(mode === "mains") prompt = `Structure a Mains answer for "${topic}".`; if(mode === "facts") prompt = `Key facts for "${topic}".`; document.getElementById('aiOutput').value = prompt; }
-function startMainsTimer() { document.getElementById('focusTime').value = 7; startTimer(); }
+function startMainsTimer() { document.getElementById('focusTime').value = 10; startTimer(); }
 function setupAutosave() {
     // This list connects the HTML ID to the App Data variable
     const mappings = [
@@ -2026,6 +2044,8 @@ function renderTribe() {
     
     if (!appData.tribe) appData.tribe = [];
     
+    const due=appData.tribe.filter(p => Math.floor((Date.now()-(p.lastContact||0))/86400000) >= Number(p.freq||7)).length;
+    const summary=document.getElementById('tribeSummary'); if(summary) summary.textContent=due ? `${due} check-in${due===1?'':'s'} due` : 'All caught up';
     appData.tribe.forEach((p, i) => {
         // Calculate days since last contact
         const last = p.lastContact || 0;
@@ -2033,29 +2053,25 @@ function renderTribe() {
         const daysAgo = Math.floor(diff / (1000 * 60 * 60 * 24));
         
         // Green if recent, Red if overdue
-        const isOverdue = daysAgo > p.freq;
+        const isOverdue = daysAgo >= Number(p.freq || 7);
         const color = isOverdue ? 'var(--danger)' : 'var(--success)';
         const status = isOverdue ? `Call! (${daysAgo}d)` : `${daysAgo}d ago`;
         
-        container.innerHTML += `
-            <div style="border:1px solid ${color}; padding:10px; border-radius:8px; text-align:center; position:relative;">
-                <button onclick="deletePerson(${i})" style="position:absolute; top:2px; right:5px; background:none; color:gray; padding:0; cursor:pointer;">&times;</button>
-                <div style="font-weight:bold; margin-bottom:5px;">${p.name}</div>
-                <div style="font-size:0.8rem; margin-bottom:8px; color:${color}; font-weight:bold;">${status}</div>
-                <button onclick="contactPerson(${i})" style="font-size:0.8rem; padding:4px 8px; cursor:pointer;">Mark Contacted</button>
-            </div>
-        `;
+        container.innerHTML += `<article class="tribe-person ${isOverdue?'due':''}"><button type="button" class="tribe-delete" onclick="deletePerson(${i})" aria-label="Remove ${p.name}">&times;</button><span class="tribe-relation">${p.relationship || 'Friend'}</span><h3>${p.name}</h3><p class="tribe-status" style="color:${color}">${status} · every ${p.freq || 7}d</p>${p.note ? `<p class="tribe-note">${p.note}</p>` : ''}<button type="button" onclick="contactPerson(${i})">Mark contacted</button></article>`;
     });
 }
 
 function addPerson() {
-    const name = document.getElementById('personInput').value;
-    const freq = document.getElementById('freqInput').value || 7; // Default 7 days
+    const name = document.getElementById('personInput').value.trim();
+    const freq = Math.max(1, Number(document.getElementById('freqInput').value || 7));
+    const relationship=document.getElementById('tribeRelationship')?.value || 'Friend';
+    const note=document.getElementById('tribeNote')?.value.trim() || '';
     if (name) {
         if (!appData.tribe) appData.tribe = [];
-        appData.tribe.push({ name: name, freq: parseInt(freq), lastContact: Date.now() });
+        appData.tribe.push({ name, freq, relationship, note, lastContact: Date.now() });
         
         document.getElementById('personInput').value = '';
+        document.getElementById('tribeNote').value = '';
         saveData();
         renderTribe();
     }
@@ -2926,34 +2942,41 @@ function nextCard(step) {
 // ==========================================
 
 function switchTestMode(mode) {
-    const vPrelims = document.getElementById('view-prelims');
-    const vMains = document.getElementById('view-mains');
-    if(!vPrelims || !vMains) return; // Safety check
+    const vPrelims = document.getElementById('view-objective');
+    const vMains = document.getElementById('view-scored');
+    if(!vPrelims || !vMains) return;
 
-    vPrelims.style.display = mode === 'prelims' ? 'block' : 'none';
-    vMains.style.display = mode === 'mains' ? 'block' : 'none';
+    vPrelims.style.display = mode === 'objective' ? 'block' : 'none';
+    vMains.style.display = mode === 'scored' ? 'block' : 'none';
     
-    document.getElementById('tab-prelims').className = mode === 'prelims' ? 'tab active' : 'tab';
-    document.getElementById('tab-mains').className = mode === 'mains' ? 'tab active' : 'tab';
+    document.getElementById('tab-objective').className = mode === 'objective' ? 'tab active' : 'tab';
+    document.getElementById('tab-scored').className = mode === 'scored' ? 'tab active' : 'tab';
     
-    if(mode === 'prelims') renderPrelimsLogs();
+    if(mode === 'objective') renderPrelimsLogs();
     else renderMainsLogs();
+}
+
+function getTestAnalytics() {
+    if (!appData.testAnalytics) appData.testAnalytics = {};
+    if (!appData.testAnalytics.objective) appData.testAnalytics.objective = appData.testAnalytics.prelims || [];
+    if (!appData.testAnalytics.scored) appData.testAnalytics.scored = appData.testAnalytics.mains || [];
+    return appData.testAnalytics;
 }
 
 function addPrelimsLog() {
     const sub = document.getElementById('pSubject')?.value;
     const att = parseInt(document.getElementById('pAtt')?.value);
     const corr = parseInt(document.getElementById('pCorr')?.value);
+    const correctMarks = Number(document.getElementById('pCorrectMarks')?.value || 1);
+    const negativeMarks = Number(document.getElementById('pNegativeMarks')?.value || 0);
 
-    if (sub && att && !isNaN(corr)) {
+    if (sub && Number.isFinite(att) && att > 0 && Number.isFinite(corr) && corr >= 0 && corr <= att && correctMarks >= 0 && negativeMarks >= 0) {
         const wrong = att - corr;
-        const marks = (corr * 2) - (wrong * 0.66);
+        const marks = (corr * correctMarks) - (wrong * negativeMarks);
         const accuracy = att > 0 ? Math.round((corr / att) * 100) : 0;
         
-        if (!appData.testAnalytics) appData.testAnalytics = { prelims: [], mains: [] };
-        appData.testAnalytics.prelims.unshift({
-            date: new Date().toLocaleDateString(),
-            sub, att, corr, wrong, score: marks.toFixed(2), acc: accuracy
+        getTestAnalytics().objective.unshift({
+            date: new Date().toLocaleDateString(), sub, att, corr, wrong, score: marks.toFixed(2), acc: accuracy, correctMarks, negativeMarks
         });
 
         document.getElementById('pSubject').value = '';
@@ -2962,7 +2985,7 @@ function addPrelimsLog() {
         saveData();
         renderPrelimsLogs();
     } else {
-        alert("Please fill all fields.");
+        alert("Add a test name, valid attempts, correct answers, and marking values.");
     }
 }
 
@@ -2970,8 +2993,7 @@ function renderPrelimsLogs() {
     const list = document.getElementById('prelimsList');
     if (!list) return; // Prevents crash if HTML is missing
     
-    if (!appData.testAnalytics) appData.testAnalytics = { prelims: [], mains: [] };
-    const logs = appData.testAnalytics.prelims || [];
+    const logs = getTestAnalytics().objective || [];
 
     if (logs.length > 0) {
         const avgAcc = logs.reduce((sum, i) => sum + i.acc, 0) / logs.length;
@@ -2987,7 +3009,7 @@ function renderPrelimsLogs() {
         let color = log.score > 100 ? '#10b981' : (log.score > 80 ? '#f59e0b' : '#ef4444');
         list.innerHTML += `
             <div class="card" style="padding:15px; border-left: 5px solid ${color}; position:relative; margin-bottom:10px;">
-                <button onclick="delTestLog('prelims', ${i})" style="position:absolute; top:10px; right:10px; color:red; background:none;">&times;</button>
+                <button onclick="delTestLog('objective', ${i})" style="position:absolute; top:10px; right:10px; color:red; background:none;">&times;</button>
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                     <span style="font-weight:bold;">${log.sub}</span>
                     <span style="font-weight:bold; color:${color};">${log.score} Marks</span>
@@ -3006,9 +3028,8 @@ function addMainsLog() {
     const marks = parseFloat(document.getElementById('mMarks')?.value);
     const total = parseFloat(document.getElementById('mTotal')?.value) || 250;
 
-    if (name && !isNaN(marks)) {
-        if (!appData.testAnalytics) appData.testAnalytics = { prelims: [], mains: [] };
-        appData.testAnalytics.mains.unshift({
+    if (name && !isNaN(marks) && total > 0) {
+        getTestAnalytics().scored.unshift({
             date: new Date().toLocaleDateString(),
             name, paper, marks, total
         });
@@ -3023,8 +3044,7 @@ function renderMainsLogs() {
     const list = document.getElementById('mainsList');
     if (!list) return;
 
-    if (!appData.testAnalytics) appData.testAnalytics = { prelims: [], mains: [] };
-    const logs = appData.testAnalytics.mains || [];
+    const logs = getTestAnalytics().scored || [];
 
     list.innerHTML = '';
     logs.forEach((log, i) => {
@@ -3032,7 +3052,7 @@ function renderMainsLogs() {
         let color = pct >= 50 ? '#10b981' : (pct < 35 ? '#ef4444' : '#3b82f6');
         list.innerHTML += `
             <div class="card" style="padding:15px; border-left: 5px solid ${color}; position:relative; margin-bottom:10px;">
-                <button onclick="delTestLog('mains', ${i})" style="position:absolute; top:10px; right:10px; color:red; background:none;">&times;</button>
+                <button onclick="delTestLog('scored', ${i})" style="position:absolute; top:10px; right:10px; color:red; background:none;">&times;</button>
                 <div style="display:flex; justify-content:space-between;">
                     <div><span style="color:${color}; font-weight:bold; font-size:0.8rem;">${log.paper}</span> <b>${log.name}</b></div>
                     <div style="font-weight:bold; color:${color};">${log.marks}/${log.total}</div>
@@ -3044,9 +3064,9 @@ function renderMainsLogs() {
 
 function delTestLog(type, index) {
     if(confirm("Delete this log?")) {
-        appData.testAnalytics[type].splice(index, 1);
+        getTestAnalytics()[type].splice(index, 1);
         saveData();
-        if(type === 'prelims') renderPrelimsLogs();
+        if(type === 'objective') renderPrelimsLogs();
         else renderMainsLogs();
     }
 }

@@ -191,15 +191,9 @@
 </div>
 
 <div id="tribe" class="section">
-    <h2><i class="fas fa-users"></i> The Tribe</h2>
-    <div class="card">
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <input type="text" id="personInput" placeholder="Name (e.g. Mom)" class="modal-input">
-            <input type="number" id="freqInput" placeholder="Days" title="Call every X days" class="modal-input" style="width:60px;">
-            <button onclick="addPerson()">Add</button>
-        </div>
-        <div id="tribeList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap:10px;"></div>
-    </div>
+    <div class="section-heading"><div><h2><i class="fas fa-users"></i> The Tribe</h2><p>Keep the people who matter close.</p></div><div id="tribeSummary" class="section-summary"></div></div>
+    <div class="card tribe-add-card"><div class="tribe-form"><input type="text" id="personInput" placeholder="Name" class="modal-input"><select id="tribeRelationship" class="modal-input"><option value="Friend">Friend</option><option value="Family">Family</option><option value="Partner">Partner</option><option value="Colleague">Colleague</option><option value="Mentor">Mentor</option></select><input type="number" id="freqInput" value="7" min="1" placeholder="Days" title="Check in every X days" class="modal-input"><input type="text" id="tribeNote" placeholder="A note, birthday, or conversation topic" class="modal-input"><button onclick="addPerson()">Add person</button></div></div>
+    <div id="tribeList" class="tribe-grid"></div>
 </div>  <div id="yearCompass" class="section">
     <h2><i class="fas fa-calendar-alt"></i> Year Compass</h2>
     <div class="card">
@@ -256,7 +250,7 @@
     <div class="card ledger-history-card"><div class="ledger-history-head"><h3>Transactions</h3><div><input type="month" id="ledgerMonth" onchange="renderLedger()"><input type="search" id="ledgerSearch" placeholder="Search description or person" oninput="renderLedger()"></div></div><div id="ledgerList"></div></div>
 </div>        
                    
-        <div id="dopamine" class="section"><h2><i class="fas fa-mobile-alt"></i> Dopamine Log</h2><p style="color:gray; font-size:0.9rem;">Track the waste. Reclaim the time.</p><br><div class="card"><div style="display:flex; gap:10px;"><input type="text" id="distractionInput" placeholder="Activity (e.g. Insta)..." class="modal-input"><input type="number" id="distractionTime" placeholder="Mins" class="modal-input" style="width:80px;"><button onclick="logDistraction()">Log</button></div><h3 style="margin-top:20px; color:var(--danger);">Total Wasted Today: <span id="totalWasted">0</span> mins</h3><div id="distractionList" style="margin-top:10px;"></div></div></div>
+        <div id="dopamine" class="section"><div class="section-heading"><div><h2><i class="fas fa-mobile-alt"></i> Detox</h2><p>Notice distractions, protect your attention, and spot your patterns.</p></div><button class="detox-goal-button" onclick="setDetoxGoal()">Daily limit: <span id="detoxGoalLabel">60m</span></button></div><div class="detox-summary-grid"><div class="detox-stat"><small>Today</small><strong id="totalWasted">0m</strong></div><div class="detox-stat"><small>Left in limit</small><strong id="detoxRemaining">60m</strong></div><div class="detox-stat"><small>Last 7 days</small><strong id="detoxWeekTotal">0m</strong></div></div><div class="card"><div class="detox-entry"><input type="text" id="distractionInput" placeholder="Activity or trigger" class="modal-input"><select id="distractionCategory" class="modal-input"><option value="Social">Social</option><option value="Video">Video</option><option value="Gaming">Gaming</option><option value="Browsing">Browsing</option><option value="Other">Other</option></select><input type="number" id="distractionTime" min="1" placeholder="Minutes" class="modal-input"><button onclick="logDistraction()">Log</button></div><div id="detoxInsight" class="detox-insight"></div><div id="distractionList" class="detox-list"></div></div></div>
           <div id="mood" class="section">
     <h2><i class="fas fa-smile"></i> Mood Grid</h2>
     <div class="card">
@@ -288,7 +282,7 @@
         </p>
     </div>
 </div>
-        <div id="inventory" class="section"><h2><i class="fas fa-shopping-cart"></i> Inventory</h2><p style="color:gray; font-size:0.9rem;">Never run out of essentials.</p><br><div class="card"><div style="display:flex; gap:10px;"><input type="text" id="invInput" placeholder="Item (e.g. Toothpaste)..." class="modal-input"><button onclick="addInventory()">Add</button></div><div id="invList" style="margin-top:20px; display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:10px;"></div></div></div>
+        <div id="inventory" class="section"><div class="section-heading"><div><h2><i class="fas fa-shopping-cart"></i> Shop</h2><p>Build a practical list, track quantities, and tick off purchases.</p></div><div id="shopSummary" class="section-summary"></div></div><div class="card"><div class="shop-entry"><input type="text" id="invInput" placeholder="Item to buy" class="modal-input"><select id="invCategory" class="modal-input"><option>Groceries</option><option>Home</option><option>Health</option><option>Work</option><option>Other</option></select><input type="number" id="invQty" value="1" min="1" class="modal-input"><button onclick="addInventory()">Add item</button></div><div class="shop-filter"><button type="button" class="active" onclick="filterShop('open', this)">To buy</button><button type="button" onclick="filterShop('all', this)">All</button><button type="button" onclick="filterShop('done', this)">Purchased</button></div><div id="invList" class="shop-list"></div></div></div>
           <div id="identity" class="section">
     <h2><i class="fas fa-id-card"></i> Identity</h2>
     <div class="card">
@@ -600,19 +594,22 @@
         <h2><i class="fas fa-chart-pie"></i> Mock Test HQ</h2>
     </div>
 
+    <p class="test-intro">Record any exam, practice set, certification, quiz, or assessment.</p>
     <div class="tabs" style="border-bottom: 2px solid var(--border); margin-bottom: 20px;">
-        <div class="tab active" onclick="switchTestMode('prelims')" id="tab-prelims" style="flex:1; text-align:center;">Prelims (MCQ)</div>
-        <div class="tab" onclick="switchTestMode('mains')" id="tab-mains" style="flex:1; text-align:center;">Mains (Written)</div>
+        <div class="tab active" onclick="switchTestMode('objective')" id="tab-objective" style="flex:1; text-align:center;">Objective test</div>
+        <div class="tab" onclick="switchTestMode('scored')" id="tab-scored" style="flex:1; text-align:center;">Score-based test</div>
     </div>
 
-    <div id="view-prelims">
+    <div id="view-objective">
         <div class="card" style="margin-bottom:20px; border-left:4px solid #ef4444;">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
-                <input type="text" id="pSubject" placeholder="Subject (e.g. Polity)" class="modal-input" style="grid-column: span 2;">
+                <input type="text" id="pSubject" placeholder="Test or subject (e.g. Biology Quiz)" class="modal-input" style="grid-column: span 2;">
                 <input type="number" id="pAtt" placeholder="Attempted" class="modal-input">
                 <input type="number" id="pCorr" placeholder="Correct" class="modal-input">
+                <input type="number" id="pCorrectMarks" placeholder="Marks per correct" value="1" min="0" step="0.1" class="modal-input">
+                <input type="number" id="pNegativeMarks" placeholder="Penalty per wrong" value="0" min="0" step="0.1" class="modal-input">
             </div>
-            <button onclick="addPrelimsLog()" style="width:100%; background:var(--primary);">Calculate & Save</button>
+            <button onclick="addPrelimsLog()" style="width:100%; background:var(--primary);">Calculate & save</button>
         </div>
         
         <div style="display:flex; gap:10px; margin-bottom:20px;">
@@ -628,21 +625,15 @@
         <div id="prelimsList" style="display:grid; gap:10px;"></div>
     </div>
 
-    <div id="view-mains" style="display:none;">
+    <div id="view-scored" style="display:none;">
         <div class="card" style="margin-bottom:20px; border-left:4px solid #3b82f6;">
-            <input type="text" id="mTestName" placeholder="Test Name (e.g. GS 1 Full)" class="modal-input" style="margin-bottom:10px;">
+            <input type="text" id="mTestName" placeholder="Test name" class="modal-input" style="margin-bottom:10px;">
             <div style="display:flex; gap:10px; margin-bottom:10px;">
-                <select id="mPaper" class="modal-input" style="margin:0; flex:1;">
-                    <option value="GS 1">GS 1</option>
-                    <option value="GS 2">GS 2</option>
-                    <option value="GS 3">GS 3</option>
-                    <option value="GS 4">GS 4</option>
-                    <option value="Essay">Essay</option>
-                </select>
+                <input type="text" id="mPaper" placeholder="Category or subject" class="modal-input" style="margin:0; flex:1;">
                 <input type="number" id="mMarks" placeholder="Scored" class="modal-input" style="margin:0; flex:0.8;">
-                <input type="number" id="mTotal" placeholder="/ 250" value="250" class="modal-input" style="margin:0; flex:0.5;">
+                <input type="number" id="mTotal" placeholder="Total" value="100" min="1" class="modal-input" style="margin:0; flex:0.5;">
             </div>
-            <button onclick="addMainsLog()" style="width:100%; background:#3b82f6; margin-top:5px;">Log Score</button>
+            <button onclick="addMainsLog()" style="width:100%; background:#3b82f6; margin-top:5px;">Log score</button>
         </div>
         <div id="mainsList" style="display:grid; gap:10px;"></div>
     </div>

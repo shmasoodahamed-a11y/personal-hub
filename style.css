@@ -114,6 +114,19 @@ th { background: var(--header-row); position: sticky; top: 0; }
 .subject-header { background: #1e3a8a; color: white; font-weight: bold; }
 .chapter-row { background: var(--chapter-row); cursor: pointer; font-weight: 600; }
 .topic-row { display: none; } .topic-row.visible { display: table-row; }
+.subject-header td { padding:14px 16px; background:linear-gradient(100deg,#1d4ed8,#4338ca); color:#fff; border-bottom:0; }
+.subject-header strong { display:block; font-size:1rem; letter-spacing:-.01em; }
+.subject-header small { display:block; margin-top:3px; opacity:.78; }
+.chapter-row td { padding:11px 16px; color:var(--text); border-left:4px solid #60a5fa; }
+.chapter-row:hover td { background:color-mix(in srgb, var(--primary) 12%, var(--chapter-row)); }
+.chapter-row .fa-chevron-right { width:16px; transition:transform 150ms ease; }
+.chapter-row:has(+ .visible) .fa-chevron-right { transform:rotate(90deg); }
+.curriculum-level { display:inline-flex; width:max-content; margin-right:8px; padding:2px 6px; border-radius:999px; background:rgba(255,255,255,.18); color:inherit; font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; vertical-align:middle; }
+.chapter-row .curriculum-level { background:color-mix(in srgb, var(--primary) 16%, transparent); color:var(--primary); }
+.topic-row td { background:color-mix(in srgb, var(--card-bg) 88%, var(--bg)); }
+.topic-name { display:flex; align-items:center; gap:9px; font-weight:500; }
+.topic-dot { width:7px; height:7px; flex:0 0 auto; border-radius:99px; background:#a78bfa; box-shadow:0 0 0 4px color-mix(in srgb,#a78bfa 16%,transparent); }
+.subject-header button,.chapter-row button,.topic-row button { min-height:28px; padding:4px 7px; font-size:.7rem; }
 .rev-box { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .rev-btn { padding: 2px 8px; font-size: 0.8rem; background: #8b5cf6; color: white; border-radius: 3px; min-width: 20px; }
 .status-btn { width: 15px; height: 15px; border-radius: 50%; border: 1px solid #ccc; cursor: pointer; display: inline-block; vertical-align: middle; margin-right: 5px; }
@@ -133,6 +146,21 @@ th { background: var(--header-row); position: sticky; top: 0; }
 .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
 .modal-content { background: var(--card-bg); padding: 20px; border-radius: 8px; width: 400px; color: var(--text); border: 1px solid var(--border); }
 .modal-input { width: 100%; margin: 10px 0; padding: 10px; }
+.section-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:18px; }
+.section-heading h2 { margin:0; }
+.section-heading p { margin-top:5px; color:var(--text-muted); }
+.section-summary { padding:8px 11px; border:1px solid var(--border); border-radius:999px; background:var(--card-bg); color:var(--primary); font-size:.82rem; font-weight:700; white-space:nowrap; }
+.detox-summary-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+.detox-stat { display:grid; gap:3px; padding:15px; border:1px solid var(--border); border-radius:13px; background:var(--card-bg); }
+.detox-stat small { color:var(--text-muted); font-weight:600; }.detox-stat strong { font-size:1.35rem; color:var(--primary); }
+.detox-goal-button { width:auto; min-height:38px; padding:8px 11px; background:transparent; border:1px solid var(--border); color:var(--text); font-size:.8rem; }
+.detox-entry,.shop-entry,.tribe-form { display:grid; grid-template-columns:1fr 140px 105px auto; gap:10px; align-items:center; }
+.detox-entry .modal-input,.shop-entry .modal-input,.tribe-form .modal-input { margin:0; min-width:0; }
+.detox-insight { margin:18px 0 8px; padding:11px 13px; border-left:3px solid #8b5cf6; border-radius:8px; background:color-mix(in srgb,#8b5cf6 8%,var(--bg)); color:var(--text-muted); font-size:.9rem; }
+.detox-list { display:grid; gap:4px; }.detox-log { display:flex; justify-content:space-between; align-items:center; padding:11px 4px; border-bottom:1px solid var(--border); }.detox-log strong,.detox-log small { display:block; }.detox-log small { margin-top:2px; color:var(--text-muted); font-size:.75rem; }.detox-log>div:last-child { display:flex; align-items:center; gap:12px; color:var(--danger); font-weight:700; }.detox-log button { min-height:30px; padding:0 8px; color:var(--danger); background:transparent; }
+.shop-entry { grid-template-columns:1fr 150px 80px auto; }.shop-filter { display:flex; gap:8px; margin:18px 0 10px; }.shop-filter button { min-height:34px; padding:6px 10px; background:transparent; color:var(--text-muted); border:1px solid var(--border); }.shop-filter button.active { color:#fff; background:var(--primary); border-color:var(--primary); }.shop-list { display:grid; gap:8px; }.shop-item { display:flex; align-items:center; gap:10px; padding:11px; border:1px solid var(--border); border-radius:11px; background:var(--bg); }.shop-item.purchased { opacity:.62; }.shop-item.purchased .shop-item-main strong { text-decoration:line-through; }.shop-check { width:26px; min-height:26px; padding:0; border:1px solid var(--primary); border-radius:50%; background:transparent; color:var(--primary); }.purchased .shop-check { color:#fff; background:var(--success); border-color:var(--success); }.shop-item-main { display:grid; gap:2px; flex:1; min-width:0; }.shop-item-main small { color:var(--text-muted); }.shop-quantity { display:flex; align-items:center; gap:7px; }.shop-quantity button { width:27px; min-height:27px; padding:0; background:var(--card-bg); color:var(--text); border:1px solid var(--border); }.shop-delete { min-height:30px; padding:4px 7px; background:transparent; color:var(--danger); }.empty-state { padding:20px 4px; color:var(--text-muted); text-align:center; }
+.tribe-add-card { margin-bottom:16px; }.tribe-form { grid-template-columns:1fr 130px 75px 1.4fr auto; }.tribe-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:13px; }.tribe-person { position:relative; display:grid; gap:7px; padding:16px; border:1px solid var(--border); border-radius:14px; background:var(--card-bg); }.tribe-person.due { border-color:color-mix(in srgb,var(--danger) 60%,var(--border)); }.tribe-person h3 { padding-right:22px; }.tribe-relation { color:var(--primary); font-size:.72rem; font-weight:750; text-transform:uppercase; letter-spacing:.07em; }.tribe-status,.tribe-note { color:var(--text-muted); font-size:.82rem; line-height:1.4; }.tribe-note { min-height:34px; }.tribe-person>button:not(.tribe-delete) { justify-self:start; min-height:34px; padding:6px 9px; font-size:.78rem; }.tribe-delete { position:absolute; top:10px; right:10px; min-height:auto; padding:0 5px; background:transparent; color:var(--text-muted); font-size:1.15rem; }
+.test-intro { margin:-8px 0 16px; color:var(--text-muted); }
 /* --- 10x5 HIGH DENSITY GRID --- */
 .apps-grid {
     display: grid;
@@ -379,6 +407,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     #dashboard .card { padding: 17px; }
     #dashboard .goal-input { flex-wrap: wrap; }
     #dashboard .goal-input input { flex: 1 1 100%; }
+    .detox-entry,.shop-entry,.tribe-form { grid-template-columns:1fr 1fr; }
+    .detox-entry button,.shop-entry button,.tribe-form button { grid-column:1 / -1; }
+}
+@media (max-width: 520px) {
+    .section-heading { flex-direction:column; }
+    .detox-summary-grid { grid-template-columns:1fr; }
+    .detox-entry,.shop-entry,.tribe-form { grid-template-columns:1fr; }
+    .shop-item { align-items:flex-start; flex-wrap:wrap; }.shop-item-main { min-width:calc(100% - 42px); }.shop-quantity { margin-left:36px; }.shop-delete { margin-left:auto; }
 }
 
 /* Typography and focus timer refinement */
