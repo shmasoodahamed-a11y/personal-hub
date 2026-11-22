@@ -115,6 +115,7 @@ th { background: var(--header-row); position: sticky; top: 0; }
 .subject-header { background: #1e3a8a; color: white; font-weight: bold; }
 .chapter-row { background: var(--chapter-row); cursor: pointer; font-weight: 600; }
 .topic-row { display: none; } .topic-row.visible { display: table-row; }
+.topic-row.search-hidden,.chapter-row.search-hidden { display:none !important; }
 .subject-header td { padding:14px 16px; background:linear-gradient(100deg,#1d4ed8,#4338ca); color:#fff; border-bottom:0; }
 .subject-header strong { display:block; font-size:1rem; letter-spacing:-.01em; }
 .subject-header small { display:block; margin-top:3px; opacity:.78; }
@@ -483,6 +484,7 @@ h1, h2, h3, h4 { line-height: 1.2; letter-spacing: -0.025em; }
 #dashboard #timerSettingsArea.timer-settings-hidden { display:none !important; }
 #dashboard #timerSettingsArea .setting-group { padding:4px; }
 #dashboard #timerSettingsArea input { min-height:40px; border-radius:9px; font-size:1rem; font-weight:650; font-variant-numeric:tabular-nums; }
+#dashboard #timerSettingsArea input:disabled { opacity:.55; cursor:not-allowed; }
 .card.fullscreen #timer { width:min(100%, 800px); min-height:0; border:0; background:transparent; font-size:clamp(6rem, 18vw, 12rem); }
 
 /* Zen mode must override the dashboard card's normal positioning and width. */

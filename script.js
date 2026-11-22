@@ -140,7 +140,7 @@ function previewBackgroundImage(input) {
             const canvas=document.createElement('canvas'); canvas.width=Math.max(1,Math.round(image.width*scale)); canvas.height=Math.max(1,Math.round(image.height*scale));
             canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
             const compact=canvas.toDataURL('image/jpeg',0.72);
-            if (compact.length > 800000) { alert('This image is still too large after optimization. Please choose a smaller image.'); input.value=''; return; }
+            if (compact.length > 300000) { alert('This image is still too large after optimization. Please choose a smaller image.'); input.value=''; return; }
             pendingBackgroundImage=compact; updateBackgroundPreview(compact); applyBackgroundImage(compact);
         };
         image.src=event.target.result;
@@ -515,7 +515,7 @@ if(id === 'nottodo') renderNotToDo();
         if(id==='bio') renderBio();
         if(id==='monk') renderMonk();
       if (id === 'stoic_journal') renderStoicJournal();
-      if (id === 'test_analyser') renderPrelimsLogs();
+      if (id === 'test_analyser') { renderPrelimsLogs(); renderMainsLogs(); }
       if (id === 'book_vault') renderBookVault();
 if (id === 'niti_dm') {
     renderNitiGame();
@@ -565,6 +565,9 @@ function runGlobalSearch() {
 }
 function selectApp(id) { document.getElementById('appsModal').style.display = 'none'; showSection(id); }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+function escapeHtml(value) { const node=document.createElement('div'); node.textContent=String(value ?? ''); return node.innerHTML; }
+function calc(value) { const input=document.getElementById('calcInput'); if(!input)return; if(value==='C') { input.value=''; return; } if(value==='=') { try { if(!/^[0-9+*/().\s-]+$/.test(input.value)) throw new Error(); input.value=String(Function(`"use strict"; return (${input.value})`)()); } catch { input.value='Invalid'; } return; } if(input.value==='Invalid')input.value=''; input.value+=value; }
+function searchSyllabus() { const query=(document.getElementById('syllabusSearch')?.value||'').trim().toLowerCase(); document.querySelectorAll('#syllabus-container .topic-row').forEach(row=>{ const matches=!query || row.textContent.toLowerCase().includes(query); row.classList.toggle('search-hidden',!matches); if(query&&matches)row.classList.add('visible'); }); document.querySelectorAll('#syllabus-container .chapter-row').forEach(row=>{ const id=(row.getAttribute('onclick')||'').match(/'([^']+)'/)?.[1]; if(!query||!id)return; const topics=document.querySelectorAll(`#syllabus-container .${CSS.escape(id)}`); row.classList.toggle('search-hidden',![...topics].some(topic=>!topic.classList.contains('search-hidden'))); }); }
 
 // ==========================================
 // 5. TIMER & STOPWATCH LOGIC (FIXED)
@@ -597,6 +600,8 @@ function updateTimerVisuals() {
     const display = document.getElementById('timer');
     const startBtn = document.getElementById('btnStart');
     const doneBtn = document.getElementById('btnDone');
+    const focusInput = document.getElementById('focusTime');
+    const breakInput = document.getElementById('breakTime');
     const isStopwatch = appData.timer.mode === 'stopwatch';
     btnTimer.classList.toggle('active', !isStopwatch);
     btnStopwatch.classList.toggle('active', isStopwatch);
@@ -635,6 +640,11 @@ function updateTimerVisuals() {
         doneBtn.disabled = !appData.timer.active;
         doneBtn.title = appData.timer.active ? 'End and log this session' : 'Start a timer before ending a session';
     }
+    [focusInput, breakInput].forEach(input => {
+        if (!input) return;
+        input.disabled = !!appData.timer.active;
+        input.title = appData.timer.active ? 'Pause or finish the session before changing this duration' : '';
+    });
 }
 
 function switchTimerMode(mode) {
@@ -1099,7 +1109,7 @@ function renderDopamine() {
     const insight=document.getElementById('detoxInsight'); if(insight) insight.textContent=top ? `Today’s biggest pull: ${top[0]} (${top[1]}m). ${total > limit ? 'You are above your chosen limit.' : `${Math.max(0,limit-total)} minutes remain in your limit.`}` : 'No distractions logged today. Protect this space.';
     const list = document.getElementById('distractionList');
     list.innerHTML = '';
-    todayLogs.forEach((l, index) => { list.innerHTML += `<div class="detox-log"><div><strong>${l.a}</strong><small>${l.category || 'Other'}</small></div><div><span>${l.m}m</span><button type="button" onclick="deleteDistraction(${index})" aria-label="Delete ${l.a}">&times;</button></div></div>`; });
+    todayLogs.forEach((l, index) => { const label=escapeHtml(l.a); const category=escapeHtml(l.category || 'Other'); list.innerHTML += `<div class="detox-log"><div><strong>${label}</strong><small>${category}</small></div><div><span>${l.m}m</span><button type="button" onclick="deleteDistraction(${index})" aria-label="Delete entry">&times;</button></div></div>`; });
 }
 function deleteDistraction(index) { const today=getTodayDate(); const rows=(appData.dopamine||[]).filter(log=>log.d===today); const target=rows[index]; const targetIndex=(appData.dopamine||[]).indexOf(target); if(targetIndex>=0) { appData.dopamine.splice(targetIndex,1); saveData(); renderDopamine(); } }
 function setDetoxGoal() { const next=prompt('Set your daily distraction limit in minutes:', appData.detoxGoal || 60); if(next===null)return; const goal=Number(next); if(!Number.isFinite(goal)||goal<0){alert('Enter a whole number of minutes.');return;} appData.detoxGoal=Math.round(goal); saveData(); renderDopamine(); }
@@ -1135,7 +1145,7 @@ function renderInventory() {
     list.innerHTML = '';
     const open=appData.inventory.filter(item=>!item.c).length;
     const summary=document.getElementById('shopSummary'); if(summary) summary.textContent=`${open} to buy`;
-    appData.inventory.forEach((item, i) => { const visible=shopFilter==='all'||(shopFilter==='open'&&!item.c)||(shopFilter==='done'&&item.c); if(!visible)return; list.innerHTML += `<div class="shop-item ${item.c?'purchased':''}"><button type="button" class="shop-check" onclick="toggleInventory(${i})" aria-label="Toggle purchase">${item.c?'✓':''}</button><div class="shop-item-main"><strong>${item.n}</strong><small>${item.category || 'Other'} · ${item.qty || 1} needed</small></div><div class="shop-quantity"><button type="button" onclick="changeInventoryQty(${i},-1)">−</button><span>${item.qty || 1}</span><button type="button" onclick="changeInventoryQty(${i},1)">+</button></div><button type="button" class="shop-delete" onclick="deleteInventory(${i})">Remove</button></div>`; });
+    appData.inventory.forEach((item, i) => { const visible=shopFilter==='all'||(shopFilter==='open'&&!item.c)||(shopFilter==='done'&&item.c); if(!visible)return; list.innerHTML += `<div class="shop-item ${item.c?'purchased':''}"><button type="button" class="shop-check" onclick="toggleInventory(${i})" aria-label="Toggle purchase">${item.c?'✓':''}</button><div class="shop-item-main"><strong>${escapeHtml(item.n)}</strong><small>${escapeHtml(item.category || 'Other')} · ${item.qty || 1} needed</small></div><div class="shop-quantity"><button type="button" onclick="changeInventoryQty(${i},-1)">−</button><span>${item.qty || 1}</span><button type="button" onclick="changeInventoryQty(${i},1)">+</button></div><button type="button" class="shop-delete" onclick="deleteInventory(${i})">Remove</button></div>`; });
     if(!list.children.length) list.innerHTML='<p class="empty-state">Nothing here yet.</p>';
 }
 function changeInventoryQty(index, delta) { appData.inventory[index].qty=Math.max(1,Number(appData.inventory[index].qty||1)+delta); saveData(); renderInventory(); }
@@ -1561,6 +1571,7 @@ function clearHistory() {
 }
 
 function renderSyllabusChart() {
+    if (typeof Chart === 'undefined') return;
     const ctx = document.getElementById('syllabusChart'); if(!ctx) return;
     if(window.syllChart) window.syllChart.destroy();
     const labels = []; const data = [];
@@ -1682,8 +1693,8 @@ function renderCalendar() {
     const grid = document.getElementById('calendarGrid');
     const heading = document.getElementById('monthYearDisplay');
     if (!grid || !heading) return;
-    processRecurringTasks();
     const year = currentDate.getFullYear(), month = currentDate.getMonth();
+    processRecurringTasks(year, month);
     heading.textContent = currentDate.toLocaleString(undefined, { month: 'long', year: 'numeric' });
     grid.replaceChildren();
     const weekdays = appData.preferences?.weekStartsMonday ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -1761,10 +1772,11 @@ function addCalendarTask() {
 }
 function savePlan() { saveData(); closeModal('planModal'); renderCalendar(); }
 
-function processRecurringTasks() {
+function processRecurringTasks(year = new Date().getFullYear(), month = new Date().getMonth()) {
     if (!appData.recurringTasks) appData.recurringTasks = [];
     if (!appData.plans) appData.plans = {};
-    const now = new Date(); const monthKey = currentMonthKey(now); const year=now.getFullYear(), month=now.getMonth();
+    const monthKey = `${year}-${String(month + 1).padStart(2,'0')}`;
+    let changed = false;
     appData.recurringTasks.filter(rule => rule.active && rule.startMonth <= monthKey).forEach(rule => {
         const day = Math.min(rule.day, new Date(year,month+1,0).getDate());
         const date = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
@@ -1773,10 +1785,11 @@ function processRecurringTasks() {
             const task = { id:`${rule.id}-${monthKey}`, recurrenceId:rule.id, text:rule.text, completed:false, reminderSent:false };
             appData.plans[date].tasks.push(task);
             if (!appData.goals.daily) appData.goals.daily=[];
-            appData.goals.daily.push({ id:task.id,text:task.text,completed:false,prio:false,dueDate:date,source:'planner' });
-            saveData();
+            if (!appData.goals.daily.some(goal => goal.id === task.id)) appData.goals.daily.push({ id:task.id,text:task.text,completed:false,prio:false,dueDate:date,source:'planner' });
+            changed = true;
         }
     });
+    if (changed) saveData();
 }
 function checkTaskReminders() {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
@@ -1793,19 +1806,22 @@ function checkTaskReminders() {
 }
 
 function renderCharts() {
+    if (typeof Chart === 'undefined') return;
     const color = appData.darkMode?'#fff':'#000';
     if(!appData.subjectLog) appData.subjectLog = {};
     const activeSubjects = Object.keys(appData.subjectLog).filter(k => appData.subjectLog[k] > 0);
     const subLabels = activeSubjects.length ? activeSubjects : ['No Data'];
     const subData = activeSubjects.length ? activeSubjects.map(k => appData.subjectLog[k]) : [1];
     const subColors = activeSubjects.length ? ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#ccc'] : ['#374151']; 
-    const ctxS = document.getElementById('subjectChart'); 
+    const ctxS = document.getElementById('subjectChart');
+    const ctxF = document.getElementById('focusChart');
+    if (!ctxS || !ctxF) return;
     if(window.subChart) window.subChart.destroy();
     window.subChart = new Chart(ctxS, { 
         type: 'pie', data: { labels: subLabels, datasets: [{data: subData, backgroundColor: subColors}] }, 
         options: { maintainAspectRatio: false, plugins: { legend: { labels: { color: color } } } } 
     });
-    const ctxF = document.getElementById('focusChart'); if(window.focusChart) window.focusChart.destroy();
+    if(window.focusChart) window.focusChart.destroy();
     const labels=[], data=[]; for(let i=6; i>=0; i--) { const d=new Date(); d.setDate(d.getDate()-i); const dStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; labels.push(dStr); data.push(appData.focusLog[dStr]||0); }
     window.focusChart = new Chart(ctxF, { type:'bar', data: { labels:labels, datasets:[{label:'Mins', data:data, backgroundColor:'#2563eb'}] }, options: { maintainAspectRatio: false, scales:{x:{ticks:{color:color}}, y:{ticks:{color:color}}} } });
 }
@@ -2086,7 +2102,7 @@ function renderTribe() {
         const color = isOverdue ? 'var(--danger)' : 'var(--success)';
         const status = isOverdue ? `Call! (${daysAgo}d)` : `${daysAgo}d ago`;
         
-        container.innerHTML += `<article class="tribe-person ${isOverdue?'due':''}"><button type="button" class="tribe-delete" onclick="deletePerson(${i})" aria-label="Remove ${p.name}">&times;</button><span class="tribe-relation">${p.relationship || 'Friend'}</span><h3>${p.name}</h3><p class="tribe-status" style="color:${color}">${status} · every ${p.freq || 7}d</p>${p.note ? `<p class="tribe-note">${p.note}</p>` : ''}<button type="button" onclick="contactPerson(${i})">Mark contacted</button></article>`;
+        container.innerHTML += `<article class="tribe-person ${isOverdue?'due':''}"><button type="button" class="tribe-delete" onclick="deletePerson(${i})" aria-label="Remove person">&times;</button><span class="tribe-relation">${escapeHtml(p.relationship || 'Friend')}</span><h3>${escapeHtml(p.name)}</h3><p class="tribe-status" style="color:${color}">${status} · every ${p.freq || 7}d</p>${p.note ? `<p class="tribe-note">${escapeHtml(p.note)}</p>` : ''}<button type="button" onclick="contactPerson(${i})">Mark contacted</button></article>`;
     });
 }
 
